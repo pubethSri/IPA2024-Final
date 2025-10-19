@@ -67,63 +67,78 @@ def delete():
         return "Oh là là Cannot delete: Interface loopback 66070158"
 
 
-# def enable():
-#     yangConfig = <!!!REPLACEME with YANG data!!!>
+def enable():
+    yangConfig = {
+        "ietf-interfaces:interface": {
+            "enabled": True
+        }
+    }
 
-#     resp = requests.<!!!REPLACEME with the proper HTTP Method!!!>(
-#         <!!!REPLACEME with URL!!!>, 
-#         data=json.dumps(<!!!REPLACEME with yangConfig!!!>), 
-#         auth=basicauth, 
-#         headers=headers, 
-#         verify=False
-#         )
+    resp = requests.patch(
+        api_url, 
+        data=json.dumps(yangConfig), 
+        auth=basicauth, 
+        headers=headers, 
+        verify=False
+        )
 
-#     if(resp.status_code >= 200 and resp.status_code <= 299):
-#         print("STATUS OK: {}".format(resp.status_code))
-#         return "<!!!REPLACEME with proper message!!!>"
-#     else:
-#         print('Error. Status Code: {}'.format(resp.status_code))
-
-
-# def disable():
-#     yangConfig = <!!!REPLACEME with YANG data!!!>
-
-#     resp = requests.<!!!REPLACEME with the proper HTTP Method!!!>(
-#         <!!!REPLACEME with URL!!!>, 
-#         data=json.dumps(<!!!REPLACEME with yangConfig!!!>), 
-#         auth=basicauth, 
-#         headers=headers, 
-#         verify=False
-#         )
-
-#     if(resp.status_code >= 200 and resp.status_code <= 299):
-#         print("STATUS OK: {}".format(resp.status_code))
-#         return "<!!!REPLACEME with proper message!!!>"
-#     else:
-#         print('Error. Status Code: {}'.format(resp.status_code))
+    if(resp.status_code >= 200 and resp.status_code <= 299):
+        print("STATUS OK: {}".format(resp.status_code))
+        return "Herzlichen Glückwunsch! Interface loopback 66070158 is enabled successfully"
+    else:
+        print('Error. Status Code: {}'.format(resp.status_code))
+        return "Ach nein! Cannot enable: Interface loopback 66070158"
 
 
-# def status():
-#     api_url_status = "<!!!REPLACEME with URL of RESTCONF Operational API!!!>"
+def disable():
+    yangConfig = {
+        "ietf-interfaces:interface": {
+            "enabled": False
+        }
+    }
 
-#     resp = requests.<!!!REPLACEME with the proper HTTP Method!!!>(
-#         <!!!REPLACEME with URL!!!>, 
-#         auth=basicauth, 
-#         headers=headers, 
-#         verify=False
-#         )
+    resp = requests.patch(
+        api_url, 
+        data=json.dumps(yangConfig), 
+        auth=basicauth, 
+        headers=headers, 
+        verify=False
+        )
 
-#     if(resp.status_code >= 200 and resp.status_code <= 299):
-#         print("STATUS OK: {}".format(resp.status_code))
-#         response_json = resp.json()
-#         admin_status = <!!!REPLACEME!!!>
-#         oper_status = <!!!REPLACEME!!!>
-#         if admin_status == 'up' and oper_status == 'up':
-#             return "<!!!REPLACEME with proper message!!!>"
-#         elif admin_status == 'down' and oper_status == 'down':
-#             return "<!!!REPLACEME with proper message!!!>"
-#     elif(resp.status_code == 404):
-#         print("STATUS NOT FOUND: {}".format(resp.status_code))
-#         return "<!!!REPLACEME with proper message!!!>"
-#     else:
-#         print('Error. Status Code: {}'.format(resp.status_code))
+    if(resp.status_code >= 200 and resp.status_code <= 299):
+        print("STATUS OK: {}".format(resp.status_code))
+        return "Herzlichen Glückwunsch! Interface loopback 66070158 is shutdowned successfully"
+    else:
+        print('Error. Status Code: {}'.format(resp.status_code))
+        return "Ach nein! Cannot shutdown: Interface loopback 66070158"
+
+
+def status():
+    api_url_status = f"https://10.0.15.61/restconf/data/ietf-interfaces:interfaces-state/interface=Loopback66070158"
+
+    resp = requests.get(
+        api_url_status, 
+        auth=basicauth, 
+        headers=headers, 
+        verify=False
+        )
+
+    if(resp.status_code >= 200 and resp.status_code <= 299):
+        print("STATUS OK: {}".format(resp.status_code))
+        response_json = resp.json()
+
+        interface_info = response_json.get("ietf-interfaces:interface", {})
+
+        admin_status = interface_info.get("admin-status")
+        oper_status = interface_info.get("oper-status")
+
+        if admin_status == 'up' and oper_status == 'up':
+            return "Great! Interface loopback 66070158 is enabled"
+        elif admin_status == 'down' and oper_status == 'down':
+            return "Uh oh.. Interface loopback 66070158 is disabled"
+    elif(resp.status_code == 404):
+        print("STATUS NOT FOUND: {}".format(resp.status_code))
+        return "これはヤバい! No Interface loopback 66070158"
+    else:
+        print('Error. Status Code: {}'.format(resp.status_code))
+        return "something bad happen!"

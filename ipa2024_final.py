@@ -22,7 +22,8 @@ ACCESS_TOKEN = os.environ.get("WEBEX_ACCESS_TOKEN")
 
 # Defines a variable that will hold the roomId
 roomIdToGetMessages = (
-    "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYmQwODczMTAtNmMyNi0xMWYwLWE1MWMtNzkzZDM2ZjZjM2Zm"
+    # "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYmQwODczMTAtNmMyNi0xMWYwLWE1MWMtNzkzZDM2ZjZjM2Zm" # IPA2025
+    "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYzljOTE4ZjAtMDNkZC0xMWVmLTljZWUtZmZlZGMxOWJmNjYy" # Private
 )
 
 while True:
@@ -81,12 +82,12 @@ while True:
             responseMessage = restconf_final.create(); 
         elif command == "delete":
             responseMessage = restconf_final.delete(); 
-        # elif command == "enable":
-        #     <!!!REPLACEME with code for enable command!!!>
-        # elif command == "disable":
-        #     <!!!REPLACEME with code for disable command!!!>
-        # elif command == "status":
-        #     <!!!REPLACEME with code for status command!!!>
+        elif command == "enable":
+            responseMessage = restconf_final.enable(); 
+        elif command == "disable":
+            responseMessage = restconf_final.disable(); 
+        elif command == "status":
+            responseMessage = restconf_final.status(); 
         # elif command == "gigabit_status":
         #     <!!!REPLACEME with code for gigabit_status command!!!>
         # elif command == "showrun":
