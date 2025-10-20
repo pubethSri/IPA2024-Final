@@ -1,0 +1,47 @@
+# ---
+# - name: Get the running config from the router
+#   hosts: router
+#   gather_facts: false
+  
+#   vars:
+#     ansible_user: "admin"
+#     ansible_password: "cisco"
+#     ansible_become_password: "cisco"
+  
+#   tasks:
+#    - name: DISPLAYING THE RUNNING-CONFIG
+#      cisco.ios.ios_command:
+#        commands:
+#          - show running-config  
+#      register: config
+ 
+#    # This task is now correctly indented and starts with '-'
+#    - name: SAVE OUTPUT TO CURRENT DIRECTORY
+#      ansible.builtin.copy:
+#        content: "{{ config.stdout[0] }}"
+#        dest: "show_run_66070158_{{ inventory_hostname }}.txt"
+#      delegate_to: localhost
+
+---
+- name: AUTOMATIC BACKUP OF RUNNING-CONFIG
+  hosts: router1
+  gather_facts: false
+  # The connection type is now defined in the hosts file
+  
+  vars:
+    ansible_user: "admin"
+    ansible_password: "cisco"
+    ansible_become_password: "cisco"
+ 
+  tasks:
+   - name: DISPLAYING THE RUNNING-CONFIG
+     cisco.ios.ios_command:  # Use the full module name
+       commands:
+         - show running-config  
+     register: config
+ 
+   - name: SAVE OUTPUT TO ./backups/
+     ansible.builtin.copy:
+       content: "{{ config.stdout[0] }}"
+       dest: "backups/show_run_{{ inventory_hostname }}.txt"
+     delegate_to: localhost
