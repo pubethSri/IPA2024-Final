@@ -1,47 +1,31 @@
-# ---
-# - name: Get the running config from the router
-#   hosts: router
-#   gather_facts: false
-  
-#   vars:
-#     ansible_user: "admin"
-#     ansible_password: "cisco"
-#     ansible_become_password: "cisco"
-  
-#   tasks:
-#    - name: DISPLAYING THE RUNNING-CONFIG
-#      cisco.ios.ios_command:
-#        commands:
-#          - show running-config  
-#      register: config
- 
-#    # This task is now correctly indented and starts with '-'
-#    - name: SAVE OUTPUT TO CURRENT DIRECTORY
-#      ansible.builtin.copy:
-#        content: "{{ config.stdout[0] }}"
-#        dest: "show_run_66070158_{{ inventory_hostname }}.txt"
-#      delegate_to: localhost
-
 ---
-- name: AUTOMATIC BACKUP OF RUNNING-CONFIG
-  hosts: router1
+- name: Backup running config via system ssh
+  hosts: localhost
   gather_facts: false
-  # The connection type is now defined in the hosts file
-  
   vars:
-    ansible_user: "admin"
-    ansible_password: "cisco"
-    ansible_become_password: "cisco"
- 
+    router_ip: 10.0.15.61
+    router_user: admin
+    router_pass: cisco
+    ssh_args: >-
+      -o StrictHostKeyChecking=no
+      -o KexAlgorithms=+diffie-hellman-group14-sha1
+      -o HostKeyAlgorithms=+ssh-rsa
+      -o Ciphers=+aes256-ctr,aes192-ctr,aes128-ctr
   tasks:
-   - name: DISPLAYING THE RUNNING-CONFIG
-     cisco.ios.ios_command:  # Use the full module name
-       commands:
-         - show running-config  
-     register: config
- 
-   - name: SAVE OUTPUT TO ./backups/
-     ansible.builtin.copy:
-       content: "{{ config.stdout[0] }}"
-       dest: "backups/show_run_{{ inventory_hostname }}.txt"
-     delegate_to: localhost
+    - name: Fetch running-config (heredoc)
+      ansible.builtin.shell: |
+        sshpass -p '{{ router_pass }}' ssh -tt {{ ssh_args }} {{ router_user }}@{{ router_ip }} <<'EOF'
+        terminal length 0
+        show running-config
+        exit
+        EOF
+      register: run
+      changed_when: false
+      failed_when: run.rc != 0 or (run.stdout is not defined)
+
+    - name: Save to local file
+      ansible.builtin.copy:
+        content: "{{ run.stdout }}"
+        dest: show_run_66070158_R1-Exam.txt
+      delegate_to: localhost
+      when: run.stdout | length > 0

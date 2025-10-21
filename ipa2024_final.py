@@ -12,6 +12,9 @@ import requests
 
 # .py files
 import restconf_final
+import netmiko_final
+import ansible_final
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 #######################################################################################
 # 2. Assign the Webex access token to the variable ACCESS_TOKEN using environment variables.
 
@@ -22,8 +25,8 @@ ACCESS_TOKEN = os.environ.get("WEBEX_ACCESS_TOKEN")
 
 # Defines a variable that will hold the roomId
 roomIdToGetMessages = (
-    # "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYmQwODczMTAtNmMyNi0xMWYwLWE1MWMtNzkzZDM2ZjZjM2Zm" # IPA2025
-    "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYzljOTE4ZjAtMDNkZC0xMWVmLTljZWUtZmZlZGMxOWJmNjYy" # Private
+    "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYmQwODczMTAtNmMyNi0xMWYwLWE1MWMtNzkzZDM2ZjZjM2Zm" # IPA2025
+    # "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYzljOTE4ZjAtMDNkZC0xMWVmLTljZWUtZmZlZGMxOWJmNjYy" # Private
 )
 
 while True:
@@ -88,48 +91,59 @@ while True:
             responseMessage = restconf_final.disable(); 
         elif command == "status":
             responseMessage = restconf_final.status(); 
-        # elif command == "gigabit_status":
-        #     <!!!REPLACEME with code for gigabit_status command!!!>
-        # elif command == "showrun":
-        #     <!!!REPLACEME with code for showrun command!!!>
+        elif command == "gigabit_status":
+            responseMessage = netmiko_final.gigabit_status()
+        elif command == "showrun":
+            # Call the showrun function from ansible_final.py
+            ansible_result = ansible_final.showrun()
+            if ansible_result != "error":
+                responseMessage = "ok"
+                # Store the filename returned by ansible_final.py
+                filename_to_send = ansible_result 
+            else:
+                # Failure! Set the error message to send
+                responseMessage = "Error: Ansible"
+                filename_to_send = None # Don't send anything
+
         else:
             responseMessage = "Error: No command or unknown command"
+            filename_to_send = None # Don't send anything
         
 # 6. Complete the code to post the message to the Webex Teams room.
 
-        # The Webex Teams POST JSON data for command showrun
-        # - "roomId" is is ID of the selected room
-        # - "text": is always "show running config"
-        # - "files": is a tuple of filename, fileobject, and filetype.
+#         The Webex Teams POST JSON data for command showrun
+#         - "roomId" is is ID of the selected room
+#         - "text": is always "show running config"
+#         - "files": is a tuple of filename, fileobject, and filetype.
 
-        # the Webex Teams HTTP headers, including the Authoriztion and Content-Type
+#         the Webex Teams HTTP headers, including the Authoriztion and Content-Type
         
-        # Prepare postData and HTTPHeaders for command showrun
-        # Need to attach file if responseMessage is 'ok'; 
-        # Read Send a Message with Attachments Local File Attachments
-        # https://developer.webex.com/docs/basics for more detail
+#         Prepare postData and HTTPHeaders for command showrun
+#         Need to attach file if responseMessage is 'ok'; 
+#         Read Send a Message with Attachments Local File Attachments
+#         https://developer.webex.com/docs/basics for more detail
 
-        # if command == "showrun" and responseMessage == 'ok':
-        #     filename = "<!!!REPLACEME with show run filename and path!!!>"
-        #     fileobject = <!!!REPLACEME with open file!!!>
-        #     filetype = "<!!!REPLACEME with Content-type of the file!!!>"
-        #     postData = {
-        #         "roomId": <!!!REPLACEME!!!>,
-        #         "text": "show running config",
-        #         "files": (<!!!REPLACEME!!!>, <!!!REPLACEME!!!>, <!!!REPLACEME!!!>),
-        #     }
-        #     postData = MultipartEncoder(<!!!REPLACEME!!!>)
-        #     HTTPHeaders = {
-        #     "Authorization": ACCESS_TOKEN,
-        #     "Content-Type": <!!!REPLACEME with postData Content-Type!!!>,
-        #     }
-        # # other commands only send text, or no attached file.
-        # else:
-        postData = {"roomId": roomIdToGetMessages, "text": responseMessage}
-        postData = json.dumps(postData)
+        if command == "showrun" and responseMessage == 'ok' and filename_to_send: # check if have file or not too
+            filename = filename_to_send
+            fileobject = open(filename, "rb") # rb is read binary
+            filetype = "text/plain"
+            postDataFields = {
+                "roomId": roomIdToGetMessages,
+                "text": "show running config",
+                "files": (filename, fileobject, filetype)
+            }
+            postData = MultipartEncoder(fields=postDataFields)
+            HTTPHeaders = {
+            "Authorization": f"Bearer {ACCESS_TOKEN}",
+            "Content-Type": postData.content_type
+            }
+        # other commands only send text, or no attached file.
+        else:
+            postData = {"roomId": roomIdToGetMessages, "text": responseMessage}
+            postData = json.dumps(postData)
 
-        # the Webex Teams HTTP headers, including the Authoriztion and Content-Type
-        HTTPHeaders = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Accept": "application/yang-data+json", "Content-Type": "application/yang-data+json"}   
+            # the Webex Teams HTTP headers, including the Authoriztion and Content-Type
+            HTTPHeaders = {"Authorization": f"Bearer {ACCESS_TOKEN}", "Accept": "application/yang-data+json", "Content-Type": "application/yang-data+json"}   
 
         # Post the call to the Webex Teams message API.
         r = requests.post(
@@ -141,3 +155,7 @@ while True:
             raise Exception(
                 "Incorrect reply from Webex Teams API. Status code: {}".format(r.status_code)
             )
+
+        if command == "showrun" and responseMessage == 'ok' and filename_to_send:
+            if 'fileobject' in locals() and not fileobject.closed:
+                 fileobject.close()
