@@ -1,9 +1,9 @@
 import subprocess
 
 def showrun():
-    playbook_file = 'theplaybook.yaml' 
+    playbook_file = 'fixed_playbook.yaml' 
     # The filename your playbook creates
-    expected_filename = "show_run_66070158_R1-Exam.txt"
+    expected_filename = "show_run_66070158_R1.txt"
 
     # run playbook
     command = ['ansible-playbook', playbook_file]
